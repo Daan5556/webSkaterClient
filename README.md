@@ -1,2 +1,2 @@
 # webSkaterClient
-A webbrowser made from scatch for learning purposes
+A webbrowser made from scratch for learning purposes
