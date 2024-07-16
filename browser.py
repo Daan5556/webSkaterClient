@@ -1,3 +1,4 @@
+import gzip
 import socket
 import ssl
 
@@ -19,7 +20,7 @@ class URL:
             self.host, port = self.host.split(":", 1)
             self.port = int(port)
 
-    def request(self):
+    def request(self, user_agent=None, encoded_response=True):
         s = socket.socket(
             family=socket.AF_INET,
             type=socket.SOCK_STREAM,
@@ -34,23 +35,27 @@ class URL:
         # HEADERS
         request = "GET {} HTTP/1.0\r\n".format(self.path)
         request += "Host: {}\r\n".format(self.host)
+        if user_agent:
+            request += "User-Agent: {}\r\n".format(user_agent)
+        if encoded_response:
+            request += "Accept-Encoding: gzip\r\n"
         request += "\r\n"
+
         s.send(request.encode("utf8"))
 
-        response = s.makefile("r", encoding="utf8", newline="\r\n")
-        status_line = response.readline()
+        response = s.makefile("rb").read()
+        header_data, _, body = response.partition(b"\r\n\r\n")
+
+        headers = header_data.decode().split("\r\n")
+        status_line = headers[0]
         response_headers = {}
-        while True:
-            line = response.readline()
-            if line == "\r\n": break
-            header, value = line.split(":", 1)
-            response_headers[header.casefold()] = value.strip()
+        for header in headers[1:]:
+            key, value = header.split(":", 1)
+            response_headers[key.casefold()] = value.strip()
+        if "content-encoding" in response_headers and response_headers["content-encoding"] == "gzip":
+            body = gzip.decompress(body)
 
-            assert "transfer-encoding" not in response_headers
-            assert "content-encoding" not in response_headers
-
-            content = response.read()
-            return content
+        return body.decode("utf8")
 
 def show(body):
     in_tag = False
@@ -61,12 +66,12 @@ def show(body):
             in_tag = False
         elif not in_tag:
             print(c, end="")
-
-def load(url):
-    body = url.request()
+def load(url, user_agent=None):
+    body = url.request(user_agent)
     show(body)
 
+user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0"
 
 if __name__ == "__main__":
     import sys
-    load(URL(sys.argv[1]))
+    load(URL(sys.argv[1]), user_agent)
