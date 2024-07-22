@@ -24,7 +24,7 @@ def check_response_headers_for_max_age(headers: dict) -> str:
     return ""
 
 
-def GenerateCacheDict(cache_data: dict, response_headers: dict, body: bytes) -> dict:
+def GenerateCacheDict(response_headers: dict, body: bytes) -> dict:
     max_age = check_response_headers_for_max_age(response_headers)
     if not max_age: return
 
