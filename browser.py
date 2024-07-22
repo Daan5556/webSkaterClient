@@ -1,9 +1,15 @@
 import gzip
+import json
 import socket
 import ssl
 
+import cache_layer.write_cache
+import cache_layer.load_cache
+
 
 class URL:
+    CACHE_FILE = "cache.json"
+
     def __init__(self, url):
         self.scheme, url = url.split("://", 1)
         assert self.scheme in ["http", "https"]
@@ -22,6 +28,14 @@ class URL:
             self.port = int(port)
 
     def request(self, user_agent=None, encoded_response=True):
+        cache_data: dict = cache_layer.load_cache.load_cache_file(self.CACHE_FILE)
+
+        cached_response = cache_layer.load_cache.find_cache_file_return_body(
+            cache_data, self.host, self.path
+        )
+        if cached_response:
+            return cached_response
+
         s = socket.socket(
             family=socket.AF_INET,
             type=socket.SOCK_STREAM,
@@ -55,7 +69,22 @@ class URL:
             response_headers[key.casefold()] = value.strip()
         if "content-encoding" in response_headers and response_headers["content-encoding"] == "gzip":
             body = gzip.decompress(body)
-        print(response_headers)
+
+        if "200 OK" in status_line:
+            cached_response = cache_layer.write_cache.GenerateCacheDict(
+                cache_data,
+                response_headers,
+                body
+            )
+            if self.host not in cache_data: cache_data[self.host] = {}
+            if self.path not in cache_data[self.host]: cache_data[self.host][self.path] = {}
+
+            if cached_response:
+                cache_data[self.host][self.path] = cached_response
+
+                with open(self.CACHE_FILE, "w") as file:
+                    file.write(json.dumps(cache_data))
+
         return body.decode("utf8")
 
 
