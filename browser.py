@@ -2,6 +2,7 @@ import gzip
 import socket
 import ssl
 
+
 class URL:
     def __init__(self, url):
         self.scheme, url = url.split("://", 1)
@@ -57,6 +58,7 @@ class URL:
 
         return body.decode("utf8")
 
+
 def show(body):
     in_tag = False
     for c in body:
@@ -66,12 +68,16 @@ def show(body):
             in_tag = False
         elif not in_tag:
             print(c, end="")
+
+
 def load(url, user_agent=None):
     body = url.request(user_agent)
     show(body)
+
 
 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0"
 
 if __name__ == "__main__":
     import sys
+
     load(URL(sys.argv[1]), user_agent)
