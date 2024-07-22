@@ -55,7 +55,7 @@ class URL:
             response_headers[key.casefold()] = value.strip()
         if "content-encoding" in response_headers and response_headers["content-encoding"] == "gzip":
             body = gzip.decompress(body)
-
+        print(response_headers)
         return body.decode("utf8")
 
 
