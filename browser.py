@@ -1,14 +1,16 @@
 import argparse
 
-from http_handler import http_client
+from request_methods import http_client
+from request_methods import file_client
+
+from misc_services import render
+
 
 class URL:
-    CACHE_FILE = "cache.json"
-    ADDITIONAL_HEADERS = "additional_headers.json"
+    ADDITIONAL_HEADERS = "conf/additional_headers.json"
 
     def __init__(self, url):
         self.scheme, url = url.split("://", 1)
-        assert self.scheme in ["http", "https"]
         if self.scheme == "http":
             self.port = 80
         elif self.scheme == "https":
@@ -19,9 +21,8 @@ class URL:
         self.host, url = url.split("/", 1)
         self.path = "/" + url
 
-        if ":" in self.host:
-            self.host, port = self.host.split(":", 1)
-            self.port = int(port)
+        if ":" in self.host and self.scheme == "http" or self.scheme == "https":
+            self.host, self.port = self.host.split(":", 1)
 
     def request(self):
         if self.scheme == "http" or self.scheme == "https":
@@ -32,27 +33,28 @@ class URL:
                 self.path,
                 self.ADDITIONAL_HEADERS
             )
+        if self.scheme == "file":
+            return file_client.open_file(self.host + self.path)
 
-
-def show(body):
-    in_tag = False
-    for c in body:
-        if c == "<":
-            in_tag = True
-        elif c == ">":
-            in_tag = False
-        elif not in_tag:
-            print(c, end="")
-            pass
-
+        else:
+            raise Exception("Scheme {} is not supported".format(self.scheme))
 
 def load(url):
-    body = url.request()
-    show(body)
+    response = url.request()
+    content_type = response["content-type"]
+    body = response["body"]
+
+    if content_type == "text/html":
+        render.html_page(body)
+    elif content_type == "text/plain":
+        print(body)
+    else:
+        raise Exception("Content not supported for render")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Loads an url")
-    parser.add_argument("url", help="The url you want to load", default="http://example.com", nargs="?")
+    parser.add_argument("url", help="The url you want to load", default="file://./templates/index.html", nargs="?")
     args = parser.parse_args()
 
     load(URL(args.url))

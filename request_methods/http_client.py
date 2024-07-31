@@ -1,16 +1,16 @@
 import socket
 import gzip
-import json
 import ssl
 
-import read_custom_headers
+from misc_services import read_custom_headers
+
 
 def GET_request_to_server(scheme, host, port, path, ADDITIONAL_HEADERS):
     s = socket.socket(
-                family=socket.AF_INET,
-                type=socket.SOCK_STREAM,
-                proto=socket.IPPROTO_TCP
-            )
+        family=socket.AF_INET,
+        type=socket.SOCK_STREAM,
+        proto=socket.IPPROTO_TCP
+    )
 
     s.connect((host, port))
     if scheme == "https":
@@ -20,6 +20,8 @@ def GET_request_to_server(scheme, host, port, path, ADDITIONAL_HEADERS):
     # HEADERS
     request = "GET {} HTTP/1.0\r\n".format(path)
     request += "Host: {}\r\n".format(host)
+
+    formatted_headers = ""
     try:
         with open(ADDITIONAL_HEADERS, "r") as file:
             custom_headers = file.read()
@@ -43,4 +45,10 @@ def GET_request_to_server(scheme, host, port, path, ADDITIONAL_HEADERS):
     if "content-encoding" in response_headers and response_headers["content-encoding"] == "gzip":
         body = gzip.decompress(body)
 
-    return body.decode("utf8")
+    content_type = response_headers.get("content-type")
+    content_type = content_type.split(";", 1)[0] if content_type else "text/plain"
+
+    return {
+        "content-type": content_type,
+        "body": body.decode("utf8")
+    }

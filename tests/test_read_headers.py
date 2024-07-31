@@ -1,7 +1,7 @@
 import unittest
 
-from Tests.cache_layer.mock_data import read_header_mockdata
-import read_custom_headers
+from tests.cache_layer.mock_data import read_header_mockdata
+from misc_services import read_custom_headers
 
 
 class TestReadHeaders(unittest.TestCase):
