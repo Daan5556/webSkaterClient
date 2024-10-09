@@ -1,5 +1,5 @@
 import unittest
-from request_methods import file_client
+from clients import file_client
 
 
 class TestFileClient(unittest.TestCase):

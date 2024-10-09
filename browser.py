@@ -1,43 +1,26 @@
 import argparse
 
-from request_methods import http_client
-from request_methods import file_client
+from clients import http_client
+from clients import file_client
 
 from misc_services import render
+from misc_services import parse
+
 
 
 class URL:
     ADDITIONAL_HEADERS = "conf/additional_headers.json"
 
     def __init__(self, url):
-        self.scheme, url = url.split("://", 1)
-        if self.scheme == "http":
-            self.port = 80
-        elif self.scheme == "https":
-            self.port = 443
-
-        if "/" not in url:
-            url = url + "/"
-        self.host, url = url.split("/", 1)
-        self.path = "/" + url
-
-        if ":" in self.host and self.scheme == "http" or self.scheme == "https":
-            self.host, self.port = self.host.split(":", 1)
-
+        self.parsed_url = parse.url(url)
     def request(self):
-        if self.scheme == "http" or self.scheme == "https":
+        if self.parsed_url["scheme"] == "http" or self.parsed_url["scheme"] == "https":
             return http_client.GET_request_to_server(
-                self.scheme,
-                self.host,
-                self.port,
-                self.path,
+                self.parsed_url,
                 self.ADDITIONAL_HEADERS
             )
-        if self.scheme == "file":
-            return file_client.open_file(self.host + self.path)
-
-        else:
-            raise Exception("Scheme {} is not supported".format(self.scheme))
+        elif self.parsed_url["scheme"] == "file":
+            return file_client.open_file(self.parsed_url["host"] + self.parsed_url["path"])
 
 def load(url):
     response = url.request()

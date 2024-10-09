@@ -5,21 +5,21 @@ import ssl
 from misc_services import read_custom_headers
 
 
-def GET_request_to_server(scheme, host, port, path, ADDITIONAL_HEADERS):
+def GET_request_to_server(parsed_url, ADDITIONAL_HEADERS):
     s = socket.socket(
         family=socket.AF_INET,
         type=socket.SOCK_STREAM,
         proto=socket.IPPROTO_TCP
     )
 
-    s.connect((host, port))
-    if scheme == "https":
+    s.connect((parsed_url["host"], parsed_url["port"]))
+    if parsed_url["scheme"] == "https":
         ctx = ssl.create_default_context()
-        s = ctx.wrap_socket(s, server_hostname=host)
+        s = ctx.wrap_socket(s, server_hostname=parsed_url["host"])
 
     # HEADERS
-    request = "GET {} HTTP/1.0\r\n".format(path)
-    request += "Host: {}\r\n".format(host)
+    request = "GET {} HTTP/1.0\r\n".format(parsed_url["path"])
+    request += "Host: {}\r\n".format(parsed_url["host"])
 
     formatted_headers = ""
     try:
